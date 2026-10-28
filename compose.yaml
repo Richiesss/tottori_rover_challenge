@@ -26,6 +26,11 @@ services:
       - ./ws:/home/ros/ws
     devices:
       - /dev/dri:/dev/dri
+    # ホストの render グループGIDをコンテナ内のrosユーザーに追加
+    # （/dev/dri/renderD128 がこのGID所有のため、合っていないとGPUアクセスがPermission deniedになる）
+    # `getent group render` で確認した値を .env の RENDER_GID に設定すること
+    group_add:
+      - "${RENDER_GID:-992}"
     # 終了したプロセス（Gazeboなど）がゾンビとして残らないように、PID 1 にinitを置く
     init: true
     stdin_open: true

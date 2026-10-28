@@ -1,0 +1,7 @@
+# ソフトウェアレンダリングのみで動かす場合の追加設定
+# WSLgのGPU(D3D12)初期化やEGLのハードウェアデバイス検出が原因でGazeboが
+# 落ちる場合に使う。.env の COMPOSE_FILE にこのファイルを追加し、
+# LIBGL_ALWAYS_SOFTWARE=1 / GALLIUM_DRIVER=llvmpipe も設定すること。
+services:
+  ros:
+    devices: !reset []
