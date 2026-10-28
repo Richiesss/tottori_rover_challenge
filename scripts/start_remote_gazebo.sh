@@ -88,3 +88,5 @@ env -u WAYLAND_DISPLAY x11vnc -display :0 -rfbauth "$VNC_PASSWD_FILE" \
 echo "==> 完了"
 echo "    VS CodeのPORTSタブで ${VNC_PORT} を追加し、"
 echo "    クライアント側から vnc://localhost:${VNC_PORT} で接続してください。"
+echo "==> コンテナのROS 2環境に入ります（teleopなど追加のコマンドはここで）"
+exec docker compose exec ros bash
