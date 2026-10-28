@@ -52,6 +52,9 @@ docker compose down                  # 終了
 ├── compose.wsl.yaml      # WSL2 (WSLg) 用の追加設定
 ├── compose.linux.yaml    # ネイティブUbuntu用の追加設定
 ├── compose.software-render.yaml  # GPU初期化に失敗する場合のソフトウェアレンダリング用オーバーレイ
+├── scripts/
+│   ├── start_remote_gazebo.sh  # コンテナ起動〜Gazebo起動〜VNC共有を一括実行
+│   └── stop_remote_gazebo.sh   # 上記の停止
 ├── .env.example          # 各自の .env の雛形（.env はコミットしない）
 └── ws/                   # colconワークスペース。コンテナ内の ~/ws にマウントされる
     └── src/              # 自作パッケージはここに置く
@@ -72,24 +75,29 @@ source install/setup.bash
 VS CodeのRemote-SSHなどでこのWSL環境に接続している場合、WSLgの画面はWindows側にしか表示されません。
 別マシン（例: MacBook）でGazeboのウィンドウを見たい場合は、`x11vnc` でWSLgの画面を共有し、
 VS CodeのポートフォワードでクライアントPCまで中継します。
+`scripts/start_remote_gazebo.sh` が「コンテナ起動 → Gazebo起動 → ウィンドウ自動検出 → VNC共有」を
+まとめて行います。
 
 ```bash
 # WSL側: 初回のみ
-sudo apt-get update && sudo apt-get install -y x11vnc
-mkdir -p ~/.vnc
-x11vnc -storepasswd ~/.vnc/passwd     # VNC用パスワードを設定
+sudo apt-get update && sudo apt-get install -y x11vnc xdotool
 
-# Gazeboなどを起動した後、別ターミナルで実行
-env -u WAYLAND_DISPLAY x11vnc -display :0 -rfbauth ~/.vnc/passwd \
-    -localhost -forever -shared -noxdamage -noshm -id pick -rfbport 5900
-# 「クリックでウィンドウを選択してください」と出るので、
-# WSLg側に表示されているGazeboなどのウィンドウをクリックする
+# 以降はこれだけでOK（Gazeboのウィンドウはクリックせず自動検出される）
+./scripts/start_remote_gazebo.sh
+
+# 別のワールド/launchファイルを使う場合は引数で渡す
+./scripts/start_remote_gazebo.sh "ros2 launch turtlebot3_gazebo turtlebot3_house.launch.py"
+
+# 終了するとき
+./scripts/stop_remote_gazebo.sh
 ```
 
+- 初回実行時のみ `x11vnc -storepasswd` でVNCパスワードの設定を対話的に聞かれます。
 - WSLgはXWayland上でウィンドウ単位に合成しているため、デスクトップ全体ではなく
-  `-id pick` で個別のウィンドウを選んで共有する必要がある（デスクトップ全体を掴もうとすると
-  `BadMatch`エラーになる）。
-- `-localhost` でVNCサーバーをWSL内のループバックのみに公開し、外部には直接公開しない。
+  個別のウィンドウを掴んで共有する必要があります（デスクトップ全体を掴もうとすると
+  `BadMatch`エラーになるため、スクリプト内部で `xdotool` を使い対象ウィンドウを自動検出しています）。
+- `-localhost` でVNCサーバーをWSL内のループバックのみに公開し、外部には直接公開しません。
+- Gazeboの起動ログは `docker compose exec ros cat /tmp/gazebo_launch.log` で確認できます。
 
 次にクライアント側（VS Codeを動かしているPC）で：
 
