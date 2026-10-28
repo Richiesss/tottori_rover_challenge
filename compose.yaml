@@ -1,0 +1,34 @@
+# 共通設定（ネイティブUbuntu / WSL2 どちらでも使う）
+# 環境ごとの差分は compose.linux.yaml / compose.wsl.yaml に分けてあり、
+# .env の COMPOSE_FILE でどちらを重ねるか選ぶ。
+services:
+  ros:
+    build:
+      context: .
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    image: ros2-tb3-jazzy:latest
+    container_name: ros2_tb3
+    hostname: ros2_tb3
+    # DDS (ROS 2の通信) と Gazebo transport のためにホストネットワークを使う
+    network_mode: host
+    ipc: host
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      - QT_QPA_PLATFORM=xcb
+      - TURTLEBOT3_MODEL=${TURTLEBOT3_MODEL:-burger}
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      # Gazeboが真っ黒になる場合は .env で 1 にしてソフトウェアレンダリングにする
+      - LIBGL_ALWAYS_SOFTWARE=${LIBGL_ALWAYS_SOFTWARE:-0}
+    volumes:
+      - ./ws:/home/ros/ws
+    devices:
+      - /dev/dri:/dev/dri
+    # 終了したプロセス（Gazeboなど）がゾンビとして残らないように、PID 1 にinitを置く
+    init: true
+    stdin_open: true
+    tty: true
+    # 起動しっぱなしにして、docker compose exec で何個でもターミナルを開けるようにする
+    command: sleep infinity

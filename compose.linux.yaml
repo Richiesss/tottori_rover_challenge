@@ -1,0 +1,6 @@
+# ネイティブUbuntu用の追加設定
+# 事前にホスト側で `xhost +local:` を実行しておくこと
+services:
+  ros:
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
